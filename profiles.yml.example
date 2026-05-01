@@ -1,0 +1,60 @@
+# =============================================================================
+# profiles.yml.example
+# =============================================================================
+# Copy this file to ~/.dbt/profiles.yml and fill in via environment variables.
+# DO NOT commit your actual ~/.dbt/profiles.yml — it should never live in the
+# repo.
+#
+# Required env vars (see .env.example):
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_DATABASE,
+#   SNOWFLAKE_WAREHOUSE, SNOWFLAKE_ROLE, SNOWFLAKE_SCHEMA
+#
+# Plus ONE of:
+#   - SNOWFLAKE_PASSWORD                            (password auth)
+#   - SNOWFLAKE_PRIVATE_KEY_PATH [+ _PASSPHRASE]    (key-pair auth)
+# =============================================================================
+
+tpch_analytics:
+  target: dev
+  outputs:
+
+    # -------------------------------------------------------------------------
+    # DEV — password auth (simplest; good default for getting started)
+    # -------------------------------------------------------------------------
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'DBT_DEV') }}"
+      threads: 4
+      client_session_keep_alive: false
+
+    # -------------------------------------------------------------------------
+    # PROD — key-pair auth (recommended for production / CI / service accounts)
+    #
+    # To use:
+    #   1. Generate a key-pair:
+    #        openssl genrsa 2048 | openssl pkcs8 -topk8 -v2 des3 \
+    #          -inform PEM -out ~/.ssh/snowflake_rsa_key.p8
+    #   2. Register the public key on your Snowflake user:
+    #        ALTER USER <user> SET RSA_PUBLIC_KEY='<pubkey>';
+    #   3. Set env vars SNOWFLAKE_PRIVATE_KEY_PATH and (optionally)
+    #      SNOWFLAKE_PRIVATE_KEY_PASSPHRASE.
+    #   4. Run with: dbt run --target prod
+    # -------------------------------------------------------------------------
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'ANALYTICS') }}"
+      threads: 8
+      client_session_keep_alive: false
