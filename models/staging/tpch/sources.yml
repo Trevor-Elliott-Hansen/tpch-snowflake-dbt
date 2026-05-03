@@ -1,0 +1,93 @@
+version: 2
+
+sources:
+  - name: tpch
+    description: >
+      Snowflake's TPCH_SF1 sample dataset. Available read-only in every
+      Snowflake account at SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.
+    database: SNOWFLAKE_SAMPLE_DATA
+    schema: TPCH_SF1
+
+    tables:
+      - name: orders
+        description: Customer orders. ~1.5M rows.
+        columns:
+          - name: o_orderkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null
+          - name: o_custkey
+            description: FK to customer.
+            data_tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'customer')
+                  field: c_custkey
+
+      - name: lineitem
+        description: Order line items. ~6M rows. Composite PK (orderkey, linenumber).
+        columns:
+          - name: l_orderkey
+            description: FK to orders.
+            data_tests:
+              - not_null
+              - relationships:
+                  to: source('tpch', 'orders')
+                  field: o_orderkey
+          - name: l_partkey
+            description: FK to part.
+            data_tests:
+              - not_null
+
+      - name: customer
+        description: Customer master. ~150K rows.
+        columns:
+          - name: c_custkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null
+          - name: c_nationkey
+            description: FK to nation.
+            data_tests:
+              - not_null
+
+      - name: supplier
+        description: Supplier master. ~10K rows.
+        columns:
+          - name: s_suppkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: part
+        description: Part master. ~200K rows.
+        columns:
+          - name: p_partkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: partsupp
+        description: Part-supplier mapping. ~800K rows.
+
+      - name: nation
+        description: 25 nations.
+        columns:
+          - name: n_nationkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: region
+        description: 5 regions.
+        columns:
+          - name: r_regionkey
+            description: Primary key.
+            data_tests:
+              - unique
+              - not_null

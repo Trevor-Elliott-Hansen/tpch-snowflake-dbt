@@ -1,0 +1,142 @@
+version: 2
+
+models:
+
+  - name: stg_tpch__orders
+    description: Staging layer for TPCH orders. One row per order.
+    columns:
+      - name: order_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: FK to stg_tpch__customers.
+        data_tests:
+          - not_null
+      - name: order_status
+        description: O = open, F = fulfilled, P = processing.
+        data_tests:
+          - accepted_values:
+              values: ['O', 'F', 'P']
+      - name: order_priority
+        description: One of 1-URGENT, 2-HIGH, 3-MEDIUM, 4-NOT SPECIFIED, 5-LOW.
+      - name: total_price
+        description: Sum of (extended_price * (1 - discount) * (1 + tax)) across line items.
+      - name: order_date
+        description: Date the order was placed.
+        data_tests:
+          - not_null
+
+  - name: stg_tpch__lineitems
+    description: >
+      Staging layer for TPCH line items. Composite grain
+      of (order_key, line_number). Includes derived revenue fields.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - order_key
+            - line_number
+    columns:
+      - name: order_key
+        description: Part of composite PK; FK to stg_tpch__orders.
+        data_tests:
+          - not_null
+      - name: line_number
+        description: Part of composite PK.
+        data_tests:
+          - not_null
+      - name: part_key
+        description: FK to stg_tpch__parts.
+        data_tests:
+          - not_null
+      - name: supplier_key
+        description: FK to stg_tpch__suppliers.
+        data_tests:
+          - not_null
+      - name: return_flag
+        data_tests:
+          - accepted_values:
+              values: ['R', 'A', 'N']
+      - name: ship_mode
+        data_tests:
+          - accepted_values:
+              values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
+      - name: discount_rate
+        description: Per-line discount rate, 0.00–0.10.
+      - name: net_revenue
+        description: extended_price * (1 - discount_rate). Pre-computed in staging.
+      - name: discount_amount
+        description: extended_price * discount_rate. Pre-computed in staging.
+      - name: is_returned
+        description: Boolean flag for returned line items (return_flag = 'R').
+
+  - name: stg_tpch__customers
+    description: Staging layer for TPCH customers. One row per customer.
+    columns:
+      - name: customer_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: nation_key
+        description: FK to stg_tpch__nations.
+        data_tests:
+          - not_null
+      - name: market_segment
+        data_tests:
+          - accepted_values:
+              values:
+                ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+
+  - name: stg_tpch__suppliers
+    description: Staging layer for TPCH suppliers. One row per supplier.
+    columns:
+      - name: supplier_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: nation_key
+        description: FK to stg_tpch__nations.
+        data_tests:
+          - not_null
+
+  - name: stg_tpch__parts
+    description: >
+      Staging layer for TPCH parts with p_type parsed into
+      category / finish / material sub-attributes.
+    columns:
+      - name: part_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: retail_price
+        description: List price.
+
+  - name: stg_tpch__nations
+    description: Staging layer for TPCH nations. 25 rows.
+    columns:
+      - name: nation_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: region_key
+        description: FK to stg_tpch__regions.
+        data_tests:
+          - not_null
+
+  - name: stg_tpch__regions
+    description: Staging layer for TPCH regions. 5 rows.
+    columns:
+      - name: region_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: region_name
+        data_tests:
+          - accepted_values:
+              values: ['AFRICA', 'AMERICA', 'ASIA', 'EUROPE', 'MIDDLE EAST']
