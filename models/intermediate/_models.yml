@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: int_orders_with_line_items
+    description: >
+      Line items pre-aggregated to the order grain. Used by fct_orders to
+      avoid join fan-out. Grain: one row per order.
+    columns:
+      - name: order_key
+        description: Primary key. FK to stg_tpch__orders.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__orders')
+                field: order_key
+      - name: line_item_count
+        description: Number of line items in the order.
+      - name: net_revenue
+        description: Sum of net revenue across line items.
+      - name: gross_revenue
+        description: Sum of extended_price across line items (pre-discount).
+      - name: total_discount_amount
+        description: Sum of discount dollars across line items.
+      - name: total_tax_amount
+        description: Sum of tax dollars across line items.
+      - name: returned_item_count
+        description: Count of line items with return_flag = 'R'.
