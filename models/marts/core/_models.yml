@@ -1,0 +1,57 @@
+version: 2
+
+models:
+
+  - name: dim_customer
+    description: >
+      Customer dimension, denormalized with nation and region for query
+      ergonomics in BI tools. One row per customer (current state).
+    columns:
+      - name: customer_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        data_tests: [not_null]
+      - name: market_segment
+        data_tests:
+          - accepted_values:
+              values:
+                ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+      - name: nation_name
+        data_tests: [not_null]
+      - name: region_name
+        data_tests: [not_null]
+
+  - name: dim_supplier
+    description: >
+      Supplier dimension, denormalized with nation and region. One row per
+      supplier.
+    columns:
+      - name: supplier_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: supplier_name
+        data_tests: [not_null]
+      - name: nation_name
+        data_tests: [not_null]
+      - name: region_name
+        data_tests: [not_null]
+
+  - name: dim_part
+    description: >
+      Part dimension. p_type is parsed into category / finish / material in
+      stg_tpch__parts.
+    columns:
+      - name: part_key
+        description: Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: part_name
+        data_tests: [not_null]
+      - name: brand
+        data_tests: [not_null]
