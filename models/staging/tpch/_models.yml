@@ -63,7 +63,7 @@ models:
           - accepted_values:
               values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
       - name: discount_rate
-        description: Per-line discount rate, 0.00–0.10.
+        description: Per-line discount rate, 0.00–0.10. Applied to extended_price.
       - name: net_revenue
         description: extended_price * (1 - discount_rate). Pre-computed in staging.
       - name: discount_amount
