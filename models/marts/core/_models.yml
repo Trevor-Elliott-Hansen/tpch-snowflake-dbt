@@ -17,8 +17,9 @@ models:
       - name: market_segment
         data_tests:
           - accepted_values:
-              values:
-                ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+              arguments:
+                values:
+                  ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
       - name: nation_name
         data_tests: [not_null]
       - name: region_name

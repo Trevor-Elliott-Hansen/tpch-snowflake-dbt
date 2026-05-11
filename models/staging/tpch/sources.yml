@@ -22,8 +22,9 @@ sources:
             data_tests:
               - not_null
               - relationships:
-                  to: source('tpch', 'customer')
-                  field: c_custkey
+                  arguments:
+                    to: source('tpch', 'customer')
+                    field: c_custkey
 
       - name: lineitem
         description: Order line items. ~6M rows. Composite PK (orderkey, linenumber).
@@ -33,8 +34,9 @@ sources:
             data_tests:
               - not_null
               - relationships:
-                  to: source('tpch', 'orders')
-                  field: o_orderkey
+                  arguments:
+                    to: source('tpch', 'orders')
+                    field: o_orderkey
           - name: l_partkey
             description: FK to part.
             data_tests:
