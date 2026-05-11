@@ -18,7 +18,8 @@ models:
         description: O = open, F = fulfilled, P = processing.
         data_tests:
           - accepted_values:
-              values: ['O', 'F', 'P']
+              arguments:
+                values: ['O', 'F', 'P']
       - name: order_priority
         description: One of 1-URGENT, 2-HIGH, 3-MEDIUM, 4-NOT SPECIFIED, 5-LOW.
       - name: total_price
@@ -34,9 +35,10 @@ models:
       of (order_key, line_number). Includes derived revenue fields.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - order_key
-            - line_number
+          arguments:
+            combination_of_columns:
+              - order_key
+              - line_number
     columns:
       - name: order_key
         description: Part of composite PK; FK to stg_tpch__orders.
@@ -57,11 +59,13 @@ models:
       - name: return_flag
         data_tests:
           - accepted_values:
-              values: ['R', 'A', 'N']
+              arguments:
+                values: ['R', 'A', 'N']
       - name: ship_mode
         data_tests:
           - accepted_values:
-              values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
+              arguments:
+                values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
       - name: discount_rate
         description: Per-line discount rate, 0.00–0.10. Applied to extended_price.
       - name: net_revenue
@@ -86,8 +90,9 @@ models:
       - name: market_segment
         data_tests:
           - accepted_values:
-              values:
-                ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+              arguments:
+                values:
+                  ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
 
   - name: stg_tpch__suppliers
     description: Staging layer for TPCH suppliers. One row per supplier.
@@ -139,4 +144,5 @@ models:
       - name: region_name
         data_tests:
           - accepted_values:
-              values: ['AFRICA', 'AMERICA', 'ASIA', 'EUROPE', 'MIDDLE EAST']
+              arguments:
+                values: ['AFRICA', 'AMERICA', 'ASIA', 'EUROPE', 'MIDDLE EAST']
