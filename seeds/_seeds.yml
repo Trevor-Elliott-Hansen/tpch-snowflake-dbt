@@ -4,9 +4,9 @@ seeds:
   - name: customer_changes_simulated
     description: >
       Simulated customer attribute change feed used to demonstrate SCD Type 2
-      snapshotting. Each row represents the state of a customer record as of
-      `effective_date`. Real TPCH source data does not change over time, so
-      we provide a small hand-crafted feed of changes (market_segment,
+      snapshotting. Simulated current-state customer feed. SCD2 history accumulates 
+      as the seed is edited and dbt snapshot re-run. Real TPCH source data does not 
+      change over time, so we provide a small hand-crafted feed of changes (market_segment,
       account_balance, address) for a handful of customers to exercise the
       snapshot pipeline end-to-end.
 
