@@ -56,3 +56,30 @@ models:
         data_tests: [not_null]
       - name: brand
         data_tests: [not_null]
+
+  - name: dim_customer_history
+    description: >
+      SCD Type 2 history of customer attributes, built from the
+      customer_snapshot snapshot. One row per (customer_key, version).
+      Filter on `is_current` for the latest version, or use
+      `valid_from` / `valid_to_or_max` for point-in-time joins.
+    columns:
+      - name: customer_history_key
+        description: Surrogate key for this version (dbt_scd_id from snapshot).
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: Natural key. Not unique in this table — unique per version.
+        data_tests:
+          - not_null
+      - name: valid_from
+        description: When this version became effective.
+        data_tests:
+          - not_null
+      - name: valid_to
+        description: When this version was superseded. NULL for the current version.
+      - name: is_current
+        description: True for the most recent version of each customer.
+        data_tests:
+          - not_null
