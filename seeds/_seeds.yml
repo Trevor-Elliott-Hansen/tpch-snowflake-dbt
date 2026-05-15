@@ -1,0 +1,31 @@
+version: 2
+
+seeds:
+  - name: customer_changes_simulated
+    description: >
+      Simulated customer attribute change feed used to demonstrate SCD Type 2
+      snapshotting. Each row represents the state of a customer record as of
+      `effective_date`. Real TPCH source data does not change over time, so
+      we provide a small hand-crafted feed of changes (market_segment,
+      account_balance, address) for a handful of customers to exercise the
+      snapshot pipeline end-to-end.
+
+      In a production setting this seed would be replaced with a real source
+      table that emits change events (CDC stream, daily extract, etc.).
+    config:
+      column_types:
+        customer_key: integer
+        customer_name: varchar(25)
+        market_segment: varchar(10)
+        account_balance: number(12, 2)
+        phone: varchar(15)
+        address: varchar(40)
+        nation_key: integer
+        effective_date: date
+    columns:
+      - name: customer_key
+        description: Natural key from TPCH.
+      - name: market_segment
+        description: One of AUTOMOBILE / BUILDING / FURNITURE / HOUSEHOLD / MACHINERY.
+      - name: effective_date
+        description: When this state of the row became effective.
