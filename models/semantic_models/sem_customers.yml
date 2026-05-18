@@ -1,0 +1,105 @@
+version: 2
+
+# =============================================================================
+# Semantic model: customers
+# =============================================================================
+# Exposes customer dimensions (market_segment, nation_name, region_name) so
+# that metrics defined over order_items can be sliced by customer attributes
+# via MetricFlow's automatic entity joins.
+#
+# Example query enabled by this model:
+#
+#     dbt sl query \
+#       --metrics total_net_revenue,avg_order_value \
+#       --group-by customer__market_segment,customer__region_name
+#
+# MetricFlow resolves the join order_items -> customer via the shared
+# `customer` entity.
+# =============================================================================
+
+semantic_models:
+  - name: customers
+    description: >
+      Semantic model over dim_customer. Adds customer-level dimensions
+      (market segment, geography) to the metric query surface.
+    model: ref('dim_customer')
+
+    defaults:
+      agg_time_dimension: customer_created_date
+
+    # ---------------------------------------------------------------------
+    # ENTITIES
+    # ---------------------------------------------------------------------
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_key
+
+    # ---------------------------------------------------------------------
+    # DIMENSIONS
+    # ---------------------------------------------------------------------
+    dimensions:
+      - name: customer_created_date
+        type: time
+        type_params:
+          time_granularity: day
+
+      - name: market_segment
+        type: categorical
+        description: >
+          Customer's market segment: AUTOMOBILE, BUILDING, FURNITURE,
+          HOUSEHOLD, or MACHINERY.
+
+      - name: nation_name
+        type: categorical
+        description: Customer's nation.
+
+      - name: region_name
+        type: categorical
+        description: Customer's region (AFRICA, AMERICA, ASIA, EUROPE, MIDDLE EAST).
+
+    # ---------------------------------------------------------------------
+    # MEASURES — customer-level, useful for "active customer" style metrics
+    # ---------------------------------------------------------------------
+    measures:
+      - name: customer_count
+        description: Distinct count of customers.
+        agg: count_distinct
+        expr: customer_key
+
+      - name: total_account_balance
+        description: Sum of customer account balances.
+        agg: sum
+        expr: account_balance
+
+
+# =============================================================================
+# Customer-level metrics
+# =============================================================================
+metrics:
+
+  - name: customer_count
+    description: Total number of distinct customers.
+    type: simple
+    label: "Customer Count"
+    type_params:
+      measure: customer_count
+
+  - name: avg_account_balance
+    description: >
+      Average account balance per customer.
+      Derived: total_account_balance / customer_count.
+    type: derived
+    label: "Avg Account Balance"
+    type_params:
+      expr: "total_account_balance / nullif(customer_count, 0)"
+      metrics:
+        - name: total_account_balance
+        - name: customer_count
+
+  - name: total_account_balance
+    description: Sum of customer account balances.
+    type: simple
+    label: "Total Account Balance"
+    type_params:
+      measure: total_account_balance

@@ -1,0 +1,236 @@
+version: 2
+
+# =============================================================================
+# Semantic model: order_items
+# =============================================================================
+# Defines the measures, dimensions, and entities exposed by MetricFlow over
+# fct_order_items. Downstream metrics are defined at the bottom of this file.
+#
+# Grain: one row per (order_key, line_number) — i.e. one line item.
+#
+# Connect from Tableau / Sigma / Hex / Mode via the dbt Semantic Layer
+# connector to query these metrics without rewriting business logic in each
+# BI tool.
+# =============================================================================
+
+semantic_models:
+  - name: order_items
+    description: > 
+      Semantic model over fct_order_items. Defines the measures and dimensions
+      available for MetricFlow metric queries. Grain is one row per line item.
+    model: ref('fct_order_items')
+
+    defaults:
+      agg_time_dimension: order_date
+
+    # ---------------------------------------------------------------------
+    # MEASURES — the "what" (aggregatable numeric fields)
+    # ---------------------------------------------------------------------
+    measures:
+      - name: net_revenue
+        description: Sum of net revenue (extended_price * (1 - discount_rate)).
+        agg: sum
+        expr: net_revenue
+
+      - name: gross_revenue
+        description: Gross revenue before discount.
+        agg: sum
+        expr: extended_price
+
+      - name: discount_amount
+        description: Total discount dollars given.
+        agg: sum
+        expr: discount_amount
+
+      - name: quantity
+        description: Total units ordered.
+        agg: sum
+        expr: quantity
+
+      - name: order_count
+        description: Count of distinct orders.
+        agg: count_distinct
+        expr: order_key
+
+      - name: line_item_count
+        description: Count of line items.
+        agg: count
+        expr: "1"
+
+      - name: avg_discount_rate
+        description: Average discount rate applied.
+        agg: average
+        expr: discount_rate
+
+      - name: avg_days_in_transit
+        description: Average days between ship date and receipt date.
+        agg: average
+        expr: days_in_transit
+
+      - name: returned_item_count
+        description: Count of returned line items.
+        agg: sum
+        expr: "case when is_returned then 1 else 0 end"
+
+    # ---------------------------------------------------------------------
+    # DIMENSIONS — the "by" (slicing & grouping fields)
+    # ---------------------------------------------------------------------
+    dimensions:
+      - name: order_date
+        description: Date the order was placed.
+        type: time
+        type_params:
+          time_granularity: day
+
+      - name: ship_date
+        description: Date the line item was shipped.
+        type: time
+        type_params:
+          time_granularity: day
+
+      - name: order_status
+        type: categorical
+        description: "O = open, F = fulfilled, P = processing."
+
+      - name: order_priority
+        type: categorical
+        description: One of 1-URGENT, 2-HIGH, 3-MEDIUM, 4-NOT SPECIFIED, 5-LOW.
+
+      - name: ship_mode
+        type: categorical
+        description: Shipping method (AIR, RAIL, SHIP, TRUCK, etc).
+
+      - name: return_flag
+        type: categorical
+        description: "R = returned, A = accepted, N = none."
+
+      - name: is_returned
+        type: categorical
+        description: Boolean flag for returned line items.
+
+    # ---------------------------------------------------------------------
+    # ENTITIES — joinable keys to other semantic models
+    # ---------------------------------------------------------------------
+    entities:
+      - name: order_item
+        type: primary
+        expr: order_item_key
+
+      - name: order
+        type: foreign
+        expr: order_key
+
+      - name: customer
+        type: foreign
+        expr: customer_key
+
+      - name: supplier
+        type: foreign
+        expr: supplier_key
+
+      - name: part
+        type: foreign
+        expr: part_key
+
+
+# =============================================================================
+# METRICS — the named, reusable business metrics
+# =============================================================================
+# Metrics are the contract with the business: they have stable names, stable
+# definitions, and live in version control. Define once here, query from any
+# BI tool.
+# =============================================================================
+metrics:
+
+  # --- Revenue --------------------------------------------------------------
+
+  - name: total_net_revenue
+    description: >
+      Total net revenue after discounts across all line items.
+      Formula: sum(extended_price * (1 - discount_rate))
+    type: simple
+    label: "Total Net Revenue"
+    type_params:
+      measure: net_revenue
+
+  - name: total_gross_revenue
+    description: Gross revenue before discounts (sum of extended_price).
+    type: simple
+    label: "Total Gross Revenue"
+    type_params:
+      measure: gross_revenue
+
+  - name: total_discount_amount
+    description: Total discount dollars applied across all line items.
+    type: simple
+    label: "Total Discount Amount"
+    type_params:
+      measure: discount_amount
+
+  # --- Counts ---------------------------------------------------------------
+
+  - name: total_orders
+    description: Count of distinct orders.
+    type: simple
+    label: "Total Orders"
+    type_params:
+      measure: order_count
+
+  - name: line_item_count
+    description: Total number of line items.
+    type: simple
+    label: "Line Item Count"
+    type_params:
+      measure: line_item_count
+
+  - name: returned_item_count
+    description: Total number of returned line items.
+    type: simple
+    label: "Returned Items"
+    type_params:
+      measure: returned_item_count
+
+  # --- Derived metrics ------------------------------------------------------
+
+  - name: avg_order_value
+    description: >
+      Average net revenue per order.
+      Derived: total_net_revenue / total_orders.
+    type: derived
+    label: "Avg Order Value"
+    type_params:
+      expr: "total_net_revenue / total_orders"
+      metrics:
+        - name: total_net_revenue
+        - name: total_orders
+
+  - name: discount_rate_pct
+    description: >
+      Discount as a percentage of gross revenue.
+      Derived: total_discount_amount / total_gross_revenue * 100.
+    type: derived
+    label: "Discount Rate %"
+    type_params:
+      expr: "total_discount_amount / nullif(total_gross_revenue, 0) * 100"
+      metrics:
+        - name: total_discount_amount
+        - name: total_gross_revenue
+
+  - name: return_rate
+    description: >
+      Percentage of line items returned.
+      Derived: returned_item_count / line_item_count * 100.
+    type: derived
+    label: "Return Rate %"
+    type_params:
+      expr: "returned_item_count / nullif(line_item_count, 0) * 100"
+      metrics:
+        - name: returned_item_count
+        - name: line_item_count
+
+  - name: avg_days_in_transit
+    description: Average days between ship date and receipt date.
+    type: simple
+    label: "Avg Days in Transit"
+    type_params:
+      measure: avg_days_in_transit
