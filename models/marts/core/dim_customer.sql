@@ -38,7 +38,10 @@ joined as (
         n.nation_name,
 
         -- region attributes (denormalized in)
-        r.region_name
+        r.region_name,
+
+        -- synthetic date for MetricFlow time spine compatibility
+        cast('1992-01-01' as date) as customer_created_date
 
     from customers c
     left join nations n on c.nation_key = n.nation_key

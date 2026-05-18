@@ -1,0 +1,62 @@
+version: 2
+
+# =============================================================================
+# Exposures
+# =============================================================================
+# Exposures declare downstream consumers of dbt models — dashboards, ML
+# features, reverse-ETL syncs, etc. They appear in the dbt DAG so you can
+# run `dbt build --select +exposure:revenue_dashboard` to refresh exactly
+# the models a given dashboard depends on, and they show up in the auto-
+# generated lineage docs so analysts can trace which models feed which
+# dashboards.
+# =============================================================================
+
+exposures:
+
+  - name: revenue_dashboard
+    type: dashboard
+    label: "Revenue Performance Dashboard"
+    description: >
+      Tableau dashboard tracking gross/net revenue, discount rate, and
+      return rate over time, sliced by customer market segment and region.
+      Connects to the dbt Semantic Layer rather than querying tables
+      directly so metric definitions stay in version control.
+    maturity: high
+    url: https://tableau.example.com/views/revenue-performance
+    owner:
+      name: Trevor Elliott-Hansen
+      email: trevor.elliott.hansen@gmail.com
+    depends_on:
+      - ref('fct_order_items')
+      - ref('dim_customer')
+      - ref('dim_part')
+      - ref('dim_supplier')
+
+  - name: shipping_operations_dashboard
+    type: dashboard
+    label: "Shipping & Returns Operations"
+    description: >
+      Sigma workbook for the operations team monitoring days-in-transit,
+      return rate, and ship-mode mix by region. Refreshes daily.
+    maturity: medium
+    url: https://app.sigmacomputing.com/example/workbook/shipping-ops
+    owner:
+      name: Trevor Elliott-Hansen
+      email: trevor.elliott.hansen@gmail.com
+    depends_on:
+      - ref('fct_order_items')
+      - ref('dim_supplier')
+
+  - name: customer_history_audit
+    type: analysis
+    label: "Customer Attribute Change Audit"
+    description: >
+      Ad-hoc analysis used by the data governance team to review when and
+      how customer market_segment values change. Built directly on the
+      SCD2 history dimension.
+    maturity: low
+    owner:
+      name: Trevor Elliott-Hansen
+      email: trevor.elliott.hansen@gmail.com
+    depends_on:
+      - ref('dim_customer_history')
