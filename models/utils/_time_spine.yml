@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: dim_dates
+    description: >
+      Calendar dimension with one row per day, generated declaratively from
+      dbt_utils.date_spine. Serves as the MetricFlow time spine and as a
+      generic date dimension for joins / period densification.
+
+    # MetricFlow time spine configuration
+    time_spine:
+      standard_granularity_column: date_day
+
+    columns:
+      - name: date_day
+        description: The date. Primary key.
+        granularity: day
+        data_tests:
+          - unique
+          - not_null
+      - name: year
+        description: 4-digit year.
+      - name: quarter
+        description: Quarter of the year (1-4).
+      - name: month
+        description: Month of the year (1-12).
+      - name: week_start
+        description: Monday of the ISO week containing this date.
+      - name: month_start
+        description: First day of the month containing this date.
+      - name: quarter_start
+        description: First day of the quarter containing this date.
+      - name: year_start
+        description: First day of the year containing this date.
+      - name: is_weekend
+        description: True if Saturday or Sunday.
