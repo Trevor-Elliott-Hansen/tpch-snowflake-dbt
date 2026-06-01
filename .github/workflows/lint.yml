@@ -1,0 +1,80 @@
+name: Lint
+
+# =============================================================================
+# Lint workflow
+# =============================================================================
+# Runs sqlfluff lint and dbt parse on every push/PR to main. No Snowflake
+# credentials required — uses the jinja templater so refs/sources don't need
+# to resolve against a live warehouse.
+#
+# This is intentionally lightweight; a full `dbt build` workflow would
+# require warehouse access and is left as a future enhancement (would need
+# a CI service account + secrets in the repo).
+# =============================================================================
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: SQL lint and dbt parse
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dbt and sqlfluff
+        run: |
+          python -m pip install --upgrade pip
+          pip install \
+            "dbt-core~=1.11.0" \
+            "dbt-snowflake~=1.11.0" \
+            "sqlfluff~=3.4.0" \
+            "sqlfluff-templater-dbt~=3.4.0"
+
+      - name: Install dbt packages
+        run: dbt deps
+
+      # Provide stub env vars so dbt parse doesn't fail on env_var() lookups.
+      # No real warehouse connection is made — we're only parsing.
+      - name: dbt parse
+        env:
+          SNOWFLAKE_ACCOUNT: ci-stub
+          SNOWFLAKE_USER: ci-stub
+          SNOWFLAKE_PASSWORD: ci-stub
+          SNOWFLAKE_DATABASE: ci-stub
+          SNOWFLAKE_WAREHOUSE: ci-stub
+          SNOWFLAKE_ROLE: ci-stub
+          SNOWFLAKE_SCHEMA: ci-stub
+          DBT_PROFILES_DIR: ./ci
+        run: |
+          mkdir -p ./ci
+          cat > ./ci/profiles.yml <<'EOF'
+          tpch_analytics:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: stub
+                user: stub
+                password: stub
+                role: stub
+                database: stub
+                warehouse: stub
+                schema: stub
+                threads: 1
+          EOF
+          dbt parse
+
+      - name: sqlfluff lint
+        run: sqlfluff lint models/ tests/ --dialect snowflake --templater jinja
