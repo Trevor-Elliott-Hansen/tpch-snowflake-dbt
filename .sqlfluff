@@ -26,7 +26,15 @@ exclude_rules =
     # ST07: prefer `using` over `on` — we explicitly prefer `on` for clarity
     structure.using,
     # RF02: references must be qualified — too noisy in single-source CTEs
-    references.qualification
+    references.qualification,
+    # RF04: keywords as identifiers — 'comment' is a real TPCH column name
+    references.keywords,
+    # ST02: case → coalesce — flagged on stylistically valid case statements
+    structure.simple_case,
+    # ST11: unused join — false positive under jinja-only templater for refs
+    structure.unused_join,
+    # CV11: casting style — mixing cast() and :: is intentional in some places
+    convention.casting_style
 
 [sqlfluff:indentation]
 indented_joins = false

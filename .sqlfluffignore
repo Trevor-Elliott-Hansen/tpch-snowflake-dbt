@@ -1,4 +1,7 @@
 target/
 dbt_packages/
-logs/
 analyses/
+
+# Files using dbt_utils macros that the jinja-only templater can't resolve
+models/marts/finance/fct_order_items.sql
+models/utils/dim_dates.sql
