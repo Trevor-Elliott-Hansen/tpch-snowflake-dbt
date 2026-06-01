@@ -14,9 +14,9 @@ select
     li.customer_key,
     li.net_revenue
 
-from {{ ref('fct_order_items') }} li
+from {{ ref('fct_order_items') }} as li
 
-left join {{ ref('fct_orders') }} o
+left join {{ ref('fct_orders') }} as o
     on li.order_key = o.order_key
 
 where o.order_key is null

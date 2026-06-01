@@ -30,11 +30,12 @@ joined as (
         l.line_item_grain_net_revenue,
         abs(o.order_grain_net_revenue - l.line_item_grain_net_revenue)
             as variance
-    from order_grain o
-    left join line_item_grain l using (order_key)
+    from order_grain as o
+    left join line_item_grain as l using (order_key)
 )
 
 select *
 from joined
-where variance > 0.01
-   or line_item_grain_net_revenue is null
+where
+    variance > 0.01
+    or line_item_grain_net_revenue is null

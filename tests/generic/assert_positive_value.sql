@@ -27,6 +27,6 @@
             {{ column_name }} is not null
             and
         {% endif %}
-        {{ column_name }} <= 0
+{{ column_name }} <= 0
 
 {% endtest %}

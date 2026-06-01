@@ -31,7 +31,7 @@ select
     a.last_receipt_date,
 
     -- header measure (totalprice from source)
-    o.total_price                          as order_total_price,
+    o.total_price as order_total_price,
 
     -- aggregated line-item measures
     a.line_item_count,
@@ -46,5 +46,5 @@ select
     a.returned_item_count,
     a.has_any_return
 
-from orders o
-left join order_aggs a on o.order_key = a.order_key
+from orders as o
+left join order_aggs as a on o.order_key = a.order_key

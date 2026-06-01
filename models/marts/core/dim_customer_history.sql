@@ -25,7 +25,7 @@ with snap as (
 with_flags as (
     select
         -- surrogate version key from the snapshot
-        dbt_scd_id                              as customer_history_key,
+        dbt_scd_id as customer_history_key,
 
         -- natural key
         customer_key,
@@ -39,16 +39,16 @@ with_flags as (
         nation_key,
 
         -- validity window
-        dbt_valid_from                          as valid_from,
-        dbt_valid_to                            as valid_to,
+        dbt_valid_from as valid_from,
+        dbt_valid_to as valid_to,
 
         -- coalesced upper bound for inclusive between-style filters
         coalesce(dbt_valid_to, '9999-12-31'::timestamp_ntz)
-                                                as valid_to_or_max,
+            as valid_to_or_max,
 
         -- convenience flag for "current state" filter
-        case when dbt_valid_to is null then true else false end
-                                                as is_current
+        coalesce(dbt_valid_to is null, false)
+            as is_current
 
     from snap
 )

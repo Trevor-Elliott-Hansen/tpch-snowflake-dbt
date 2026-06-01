@@ -13,15 +13,15 @@ with source as (
 renamed as (
     select
         -- ids
-        o_orderkey         as order_key,
-        o_custkey          as customer_key,
+        o_orderkey as order_key,
+        o_custkey as customer_key,
 
         -- attributes
-        o_orderstatus      as order_status,
-        o_orderpriority    as order_priority,
-        o_clerk            as clerk,
-        o_shippriority     as ship_priority,
-        o_comment          as comment,
+        o_orderstatus as order_status,
+        o_orderpriority as order_priority,
+        o_clerk as clerk,
+        o_shippriority as ship_priority,
+        o_comment as comment,
 
         -- measures
         cast(o_totalprice as number(12, 2)) as total_price,
