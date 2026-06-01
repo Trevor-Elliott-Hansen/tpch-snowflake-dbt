@@ -15,24 +15,24 @@ with source as (
 renamed as (
     select
         -- ids
-        p_partkey                          as part_key,
+        p_partkey as part_key,
 
         -- attributes
-        p_name                             as part_name,
-        p_mfgr                             as manufacturer,
-        p_brand                            as brand,
-        p_type                             as part_type,
-        p_container                        as container,
-        p_comment                          as comment,
+        p_name as part_name,
+        p_mfgr as manufacturer,
+        p_brand as brand,
+        p_type as part_type,
+        p_container as container,
+        p_comment as comment,
 
         -- measures
-        cast(p_size as integer)            as size,
+        cast(p_size as integer) as size,
         cast(p_retailprice as number(12, 2)) as retail_price,
 
         -- parsed sub-attributes (p_type = "<category> <finish> <material>")
-        split_part(p_type, ' ', 1)         as part_category,
-        split_part(p_type, ' ', 2)         as part_finish,
-        split_part(p_type, ' ', 3)         as part_material
+        split_part(p_type, ' ', 1) as part_category,
+        split_part(p_type, ' ', 2) as part_finish,
+        split_part(p_type, ' ', 3) as part_material
 
     from source
 )

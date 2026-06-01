@@ -34,9 +34,9 @@ joined as (
         n.nation_name,
         r.region_name
 
-    from suppliers s
-    left join nations n on s.nation_key = n.nation_key
-    left join regions r on n.region_key = r.region_key
+    from suppliers as s
+    left join nations as n on s.nation_key = n.nation_key
+    left join regions as r on n.region_key = r.region_key
 )
 
 select * from joined

@@ -1,0 +1,67 @@
+[sqlfluff]
+# =============================================================================
+# sqlfluff configuration for dbt + Snowflake
+# =============================================================================
+# Lints Jinja-templated SQL via the dbt templater. Run with:
+#
+#     sqlfluff lint models/
+#     sqlfluff fix  models/   # auto-fix where possible
+# =============================================================================
+
+dialect = snowflake
+templater = dbt
+runaway_limit = 10
+max_line_length = 100
+indent_unit = space
+
+# Exclude rules that conflict with dbt patterns or are stylistically opinionated
+# in ways the project disagrees with.
+exclude_rules =
+    # AM04: select * from CTEs is the standard dbt staging pattern
+    ambiguous.column_count,
+    # AM05: implicit join keyword — `inner join` everywhere is verbose
+    ambiguous.join,
+    # ST06: "select wildcards then simple targets first" — fights our rename pattern
+    structure.column_order,
+    # ST07: prefer `using` over `on` — we explicitly prefer `on` for clarity
+    structure.using,
+    # RF02: references must be qualified — too noisy in single-source CTEs
+    references.qualification,
+    # RF04: keywords as identifiers — 'comment' is a real TPCH column name
+    references.keywords,
+    # ST02: case → coalesce — flagged on stylistically valid case statements
+    structure.simple_case,
+    # ST11: unused join — false positive under jinja-only templater for refs
+    structure.unused_join,
+    # CV11: casting style — mixing cast() and :: is intentional in some places
+    convention.casting_style
+
+[sqlfluff:indentation]
+indented_joins = false
+indented_using_on = true
+template_blocks_indent = false
+
+[sqlfluff:layout:type:comma]
+line_position = trailing
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower
+
+# dbt templater config — points at the project root
+[sqlfluff:templater:dbt]
+project_dir = ./
+profiles_dir = ~/.dbt/
+profile = tpch_analytics
+target = dev

@@ -1,0 +1,50 @@
+# =============================================================================
+# pre-commit configuration
+# =============================================================================
+# Install with:
+#
+#     pip install pre-commit
+#     pre-commit install
+#
+# Hooks run automatically on `git commit`. To run manually against all files:
+#
+#     pre-commit run --all-files
+# =============================================================================
+
+repos:
+
+  # --- General hygiene -----------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # --- SQL formatting (sqlfmt) — opinionated, dbt-aware, no config -------
+  - repo: https://github.com/tconbeer/sqlfmt
+    rev: v0.23.2
+    hooks:
+      - id: sqlfmt
+        language_version: python
+        additional_dependencies: ['.[jinjafmt]']
+
+  # --- SQL linting (sqlfluff) — config in .sqlfluff ----------------------
+  # Note: requires dbt-snowflake to be installed in the same env so the dbt
+  # templater can resolve refs and sources. We pin to a known-good version.
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.2.5
+    hooks:
+      - id: sqlfluff-lint
+        additional_dependencies:
+          - dbt-snowflake~=1.8.0
+          - sqlfluff-templater-dbt~=3.2.5
+        args: [--dialect, snowflake, --templater, jinja]
+        # Use jinja templater in pre-commit so contributors don't need
+        # warehouse access; full dbt templater runs in CI.

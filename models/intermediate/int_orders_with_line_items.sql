@@ -20,24 +20,24 @@ aggregated as (
         order_key,
 
         -- counts
-        count(*)                          as line_item_count,
-        count(distinct part_key)          as distinct_part_count,
-        count(distinct supplier_key)      as distinct_supplier_count,
+        count(*) as line_item_count,
+        count(distinct part_key) as distinct_part_count,
+        count(distinct supplier_key) as distinct_supplier_count,
 
         -- monetary measures
-        sum(extended_price)               as gross_revenue,
-        sum(net_revenue)                  as net_revenue,
-        sum(discount_amount)              as total_discount_amount,
-        sum(net_revenue * tax_rate)       as total_tax_amount,
+        sum(extended_price) as gross_revenue,
+        sum(net_revenue) as net_revenue,
+        sum(discount_amount) as total_discount_amount,
+        sum(net_revenue * tax_rate) as total_tax_amount,
 
         -- volume
-        sum(quantity)                     as total_quantity,
+        sum(quantity) as total_quantity,
 
         -- shipping
-        min(ship_date)                    as first_ship_date,
-        max(ship_date)                    as last_ship_date,
-        max(receipt_date)                 as last_receipt_date,
-        avg(days_in_transit)              as avg_days_in_transit,
+        min(ship_date) as first_ship_date,
+        max(ship_date) as last_ship_date,
+        max(receipt_date) as last_receipt_date,
+        avg(days_in_transit) as avg_days_in_transit,
 
         -- returns
         sum(case when is_returned then 1 else 0 end) as returned_item_count,

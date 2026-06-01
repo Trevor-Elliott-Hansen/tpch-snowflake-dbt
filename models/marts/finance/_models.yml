@@ -82,7 +82,13 @@ models:
                 values: ['R', 'A', 'N']
       - name: net_revenue
         description: extended_price * (1 - discount_rate). Computed in staging.
+        data_tests:
+          - assert_positive_value
       - name: extended_price
         description: Gross price before discount.
+        data_tests:
+          - assert_positive_value
       - name: quantity
         description: Units ordered. Always positive.
+        data_tests:
+          - assert_positive_value
