@@ -36,11 +36,7 @@ jobs:
       - name: Install dbt and sqlfluff
         run: |
           python -m pip install --upgrade pip
-          pip install \
-            "dbt-core~=1.11.0" \
-            "dbt-snowflake~=1.11.0" \
-            "sqlfluff~=3.4.0" \
-            "sqlfluff-templater-dbt~=3.4.0"
+          pip install -r requirements.txt
 
       - name: Install dbt packages
         run: dbt deps
