@@ -251,33 +251,52 @@ pip install dbt-snowflake
 dbt deps
 ```
 
-### 2. Configure environment
+### 2. Bootstrap the Snowflake environment
+
+Run [`setup/setup.sql`](setup/setup.sql) in a Snowsight worksheet as
+`ACCOUNTADMIN`. One idempotent script creates everything this project expects:
+
+- `TRANSFORMER` role, `TRANSFORMING` warehouse (XSMALL, 60s auto-suspend),
+  `ANALYTICS` database
+- Read access to the `SNOWFLAKE_SAMPLE_DATA` TPCH share
+- Cortex prerequisites (cross-region inference; `CORTEX_USER` /
+  `COPILOT_USER` database roles) for AI tooling such as Cortex Code
+- Cost guardrails: a 50-credit resource monitor on warehouse compute, plus
+  per-user daily credit limits on Cortex Code usage
+
+The script ends with a verification query that should return 150,000 customers.
+
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
-# edit .env with your Snowflake credentials, then:
+# edit .env with your Snowflake account details, then:
 source .env
 ```
 
-### 3. Configure dbt profile
+### 4. Configure dbt profile
 
 ```bash
 mkdir -p ~/.dbt
 cp profiles.yml.example ~/.dbt/profiles.yml
 ```
 
-Both **password auth** (`dev` target) and **key-pair auth** (`prod` target) are
-documented in `profiles.yml.example`. For key-pair auth, generate a key with:
+Both targets use **key-pair auth**. Snowflake enforces MFA on password logins
+for self-service accounts, so passwords are for humans (Snowsight, Cortex
+Code Desktop) and key-pairs are for machines (dbt, CI). Generate a key with:
 
 ```bash
-openssl genrsa 2048 | openssl pkcs8 -topk8 -v2 des3 \
-  -inform PEM -out ~/.ssh/snowflake_rsa_key.p8
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM \
+  -out ~/.ssh/snowflake_rsa_key.p8 -nocrypt
+chmod 600 ~/.ssh/snowflake_rsa_key.p8
 ```
 
-Then register the public key on your Snowflake user and set
-`SNOWFLAKE_PRIVATE_KEY_PATH` in `.env`.
+Register the public key on your Snowflake user
+(`ALTER USER <user> SET RSA_PUBLIC_KEY='<pubkey>';`) and set
+`SNOWFLAKE_PRIVATE_KEY_PATH` in `.env`. (Add `-v2 des3` instead of `-nocrypt`
+for a passphrase-protected key, and set `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`.)
 
-### 3a. Set DBT_PROFILES_DIR (required for MetricFlow CLI on dbt-core 1.11)
+### 4a. Set DBT_PROFILES_DIR (required for MetricFlow CLI on dbt-core 1.11)
 
 The `mf` CLI on dbt-core 1.11 sometimes resolves profiles to its bundled
 tutorial project instead of `~/.dbt/`. Add this to your `.env` so both
@@ -291,7 +310,7 @@ DBT_PROFILES_DIR=/Users/YOUR_USERNAME/.dbt
 `mf query` will fail with "Could not find profile named 'tpch_analytics'"
 unless it's set.
 
-### 4. Build
+### 5. Build
 
 ```bash
 # Build seeds, snapshots, models, and run all tests
@@ -305,7 +324,7 @@ dbt test                                  # run all tests
 dbt docs generate && dbt docs serve       # interactive lineage + docs
 ```
 
-### 5. (Optional) install pre-commit hooks
+### 6. (Optional) install pre-commit hooks
 
 ```bash
 pip install pre-commit

@@ -9,9 +9,8 @@
 #   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_DATABASE,
 #   SNOWFLAKE_WAREHOUSE, SNOWFLAKE_ROLE, SNOWFLAKE_SCHEMA
 #
-# Plus ONE of:
-#   - SNOWFLAKE_PASSWORD                            (password auth)
-#   - SNOWFLAKE_PRIVATE_KEY_PATH [+ _PASSPHRASE]    (key-pair auth)
+# Plus:
+#   - SNOWFLAKE_PRIVATE_KEY_PATH [+ _PASSPHRASE]    (key-pair auth, both targets)
 # =============================================================================
 
 tpch_analytics:
@@ -19,13 +18,15 @@ tpch_analytics:
   outputs:
 
     # -------------------------------------------------------------------------
-    # DEV — password auth (simplest; good default for getting started)
+    # DEV — key-pair auth (Snowflake enforces MFA on password logins for
+    # self-service accounts, so programmatic access uses key-pairs; passwords
+    # are for interactive/human logins only)
     # -------------------------------------------------------------------------
     dev:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
