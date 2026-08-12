@@ -12,18 +12,35 @@ models:
         data_tests:
           - unique
           - not_null
+      - name: nation_key
+        description: FK to stg_tpch__nations.
+        data_tests:
+          - not_null
+      - name: region_key
+        description: FK to stg_tpch__regions.
+        data_tests:
+          - not_null
       - name: customer_name
         data_tests: [not_null]
       - name: market_segment
+        description: >
+          Customer market segment: AUTOMOBILE, BUILDING, FURNITURE,
+          HOUSEHOLD, or MACHINERY.
         data_tests:
           - accepted_values:
               arguments:
                 values:
                   ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+      - name: account_balance
+        description: Customer account balance. Can be negative (outstanding credit).
       - name: nation_name
         data_tests: [not_null]
       - name: region_name
         data_tests: [not_null]
+      - name: customer_created_date
+        description: >
+          Derived from the customer's earliest order date. NULL if the
+          customer has never placed an order.
 
   - name: dim_supplier
     description: >
@@ -35,8 +52,18 @@ models:
         data_tests:
           - unique
           - not_null
+      - name: nation_key
+        description: FK to stg_tpch__nations.
+        data_tests:
+          - not_null
+      - name: region_key
+        description: FK to stg_tpch__regions.
+        data_tests:
+          - not_null
       - name: supplier_name
         data_tests: [not_null]
+      - name: account_balance
+        description: Supplier account balance. Can be negative.
       - name: nation_name
         data_tests: [not_null]
       - name: region_name
@@ -56,6 +83,20 @@ models:
         data_tests: [not_null]
       - name: brand
         data_tests: [not_null]
+      - name: part_type
+        description: >
+          Original composite type string. Parsed into part_category,
+          part_finish, and part_material in staging.
+      - name: part_category
+        description: Parsed from p_type — last word (e.g. STEEL, BRASS).
+      - name: part_finish
+        description: Parsed from p_type — surface finish (e.g. POLISHED, BRUSHED).
+      - name: part_material
+        description: Parsed from p_type — base material (e.g. TIN, NICKEL).
+      - name: retail_price
+        description: List price.
+        data_tests:
+          - assert_positive_value
 
   - name: dim_customer_history
     description: >
@@ -73,13 +114,23 @@ models:
         description: Natural key. Not unique in this table — unique per version.
         data_tests:
           - not_null
+      - name: nation_key
+        description: FK to nations at this version.
+        data_tests:
+          - not_null
+      - name: account_balance
+        description: Account balance at this version. Can be negative.
       - name: valid_from
         description: When this version became effective.
         data_tests:
           - not_null
       - name: valid_to
         description: When this version was superseded. NULL for the current version.
+      - name: valid_to_or_max
+        description: >
+          Same as valid_to but with NULL replaced by 9999-12-31 for
+          closed-range point-in-time joins.
       - name: is_current
-        description: True for the most recent version of each customer.
+        description: Boolean — true for the most recent version of each customer.
         data_tests:
           - not_null
