@@ -22,8 +22,20 @@ models:
                 values: ['O', 'F', 'P']
       - name: order_priority
         description: One of 1-URGENT, 2-HIGH, 3-MEDIUM, 4-NOT SPECIFIED, 5-LOW.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  ['1-URGENT', '2-HIGH', '3-MEDIUM', '4-NOT SPECIFIED', '5-LOW']
+      - name: ship_priority
+        description: Shipping priority code. 0 = standard.
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
       - name: total_price
         description: Sum of (extended_price * (1 - discount) * (1 + tax)) across line items.
+        data_tests:
+          - not_null
+          - assert_positive_value
       - name: order_date
         description: Date the order was placed.
         data_tests:
@@ -57,23 +69,60 @@ models:
         data_tests:
           - not_null
       - name: return_flag
+        description: R = returned, A = accepted, N = neither.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['R', 'A', 'N']
+      - name: line_status
+        description: O = open (not yet shipped), F = fulfilled (shipped).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['O', 'F']
+      - name: ship_instructions
+        description: >
+          Delivery instruction code: DELIVER IN PERSON, COLLECT COD,
+          TAKE BACK RETURN, or NONE.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  ['DELIVER IN PERSON', 'COLLECT COD', 'TAKE BACK RETURN', 'NONE']
       - name: ship_mode
+        description: Shipping carrier mode.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
+      - name: quantity
+        description: Units ordered.
+        data_tests:
+          - assert_positive_value
+      - name: extended_price
+        description: Gross line price before discount (quantity * part retail price).
+        data_tests:
+          - assert_positive_value
       - name: discount_rate
         description: Per-line discount rate, 0.00–0.10. Applied to extended_price.
+        data_tests:
+          - not_null
+      - name: tax_rate
+        description: Tax rate applied to the line item, 0.00–0.08.
       - name: net_revenue
-        description: extended_price * (1 - discount_rate). Pre-computed in staging.
+        description: extended_price * (1 - discount_rate). Computed in staging.
+        data_tests:
+          - assert_positive_value
       - name: discount_amount
-        description: extended_price * discount_rate. Pre-computed in staging.
+        description: extended_price * discount_rate. Computed in staging.
       - name: is_returned
-        description: Boolean flag for returned line items (return_flag = 'R').
+        description: Boolean flag derived from return_flag = 'R'.
+      - name: days_in_transit
+        description: >
+          receipt_date - ship_date in days. NULL when receipt_date is not
+          yet populated.
 
   - name: stg_tpch__customers
     description: Staging layer for TPCH customers. One row per customer.
@@ -88,11 +137,18 @@ models:
         data_tests:
           - not_null
       - name: market_segment
+        description: >
+          Customer market segment: AUTOMOBILE, BUILDING, FURNITURE,
+          HOUSEHOLD, or MACHINERY.
         data_tests:
           - accepted_values:
               arguments:
                 values:
                   ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'HOUSEHOLD', 'MACHINERY']
+      - name: account_balance
+        description: Customer account balance. Can be negative (outstanding credit).
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
 
   - name: stg_tpch__suppliers
     description: Staging layer for TPCH suppliers. One row per supplier.
@@ -106,6 +162,10 @@ models:
         description: FK to stg_tpch__nations.
         data_tests:
           - not_null
+      - name: account_balance
+        description: Supplier account balance. Can be negative.
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
 
   - name: stg_tpch__parts
     description: >
@@ -117,8 +177,22 @@ models:
         data_tests:
           - unique
           - not_null
+      - name: part_type
+        description: >
+          Original composite type string from source. Parsed into
+          part_category, part_finish, and part_material.
       - name: retail_price
         description: List price.
+        data_tests:
+          - assert_positive_value
+      - name: part_category
+        description: Parsed from p_type — last word (e.g. STEEL, BRASS).
+      - name: part_finish
+        description: Parsed from p_type — surface finish (e.g. POLISHED, BRUSHED).
+      - name: part_material
+        description: Parsed from p_type — base material (e.g. TIN, NICKEL).
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
 
   - name: stg_tpch__nations
     description: Staging layer for TPCH nations. 25 rows.
@@ -132,6 +206,12 @@ models:
         description: FK to stg_tpch__regions.
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__regions')
+                field: region_key
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
 
   - name: stg_tpch__regions
     description: Staging layer for TPCH regions. 5 rows.
@@ -146,3 +226,5 @@ models:
           - accepted_values:
               arguments:
                 values: ['AFRICA', 'AMERICA', 'ASIA', 'EUROPE', 'MIDDLE EAST']
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.

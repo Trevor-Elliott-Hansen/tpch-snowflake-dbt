@@ -99,6 +99,17 @@ Cross-grain changes (anything touching both order- and line-item-grain
 models) need a singular reconciliation test in `tests/` — see
 `assert_fct_orders_revenue_reconciles.sql` for the pattern.
 
+**Documentation policy (two-tier).** Descriptions must carry information the
+column name doesn't. Always required, with substance: keys (what they join
+to; surrogate keys get their recipe), measures (units + formula), derived
+columns (the derivation), flags/statuses/codes (what the values mean), and
+anything with a caveat (nullability, timezone, naming collisions like the
+TPCH `comment` columns). Pass-through descriptive attributes: describe them
+in marts (the consumable layer — one plain sentence is fine), optional in
+staging. Never write descriptions that restate the column name ("part_name:
+The part name") — boilerplate coverage is worse than a gap because it hides
+the descriptions that matter.
+
 ## Definition of done — verify, don't declare
 
 Work is not complete until these have actually been run and pass:
@@ -141,8 +152,17 @@ only violates an excluded rule, and do not edit `.sqlfluff` without asking.
 
 ## Commands reference
 
+**Environment activation (required before any dbt/sqlfluff/mf command):**
+`dbt` is not on the global PATH — it lives in a project virtualenv. Activate
+in the same shell you run commands in:
+
 ```bash
-source .env                                   # env vars (required first)
+source ~/venvs/tpch-dbt/bin/activate          # the project venv
+set -a && source .env && set +a               # export env vars (set -a matters:
+                                              # plain `source` won't export)
+```
+
+```bash
 dbt build                                     # everything + all tests
 dbt build --select <model>+                   # a model and its descendants
 dbt build --select state:modified+ --defer --state target/  # changed models only

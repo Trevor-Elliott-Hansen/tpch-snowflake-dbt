@@ -22,16 +22,64 @@ models:
                 to: ref('dim_customer')
                 field: customer_key
       - name: order_status
+        description: O = open, F = fulfilled, P = processing.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['O', 'F', 'P']
+      - name: order_priority
+        description: One of 1-URGENT, 2-HIGH, 3-MEDIUM, 4-NOT SPECIFIED, 5-LOW.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  ['1-URGENT', '2-HIGH', '3-MEDIUM', '4-NOT SPECIFIED', '5-LOW']
+      - name: ship_priority
+        description: Shipping priority code. 0 = standard.
       - name: order_date
         data_tests: [not_null]
-      - name: net_revenue
-        description: Sum of net revenue across this order's line items.
+      - name: first_ship_date
+        description: Earliest ship_date among line items. NULL if nothing shipped yet.
+      - name: last_ship_date
+        description: Latest ship_date among line items.
+      - name: last_receipt_date
+        description: Latest receipt_date among line items.
+      - name: order_total_price
+        description: >
+          Total price from the orders source — sum of
+          (extended_price * (1 - discount) * (1 + tax)) across line items.
+        data_tests:
+          - assert_positive_value
       - name: line_item_count
         description: Number of line items in the order.
+        data_tests:
+          - assert_positive_value
+      - name: distinct_part_count
+        description: Count of distinct parts across line items.
+      - name: distinct_supplier_count
+        description: Count of distinct suppliers across line items.
+      - name: total_quantity
+        description: Sum of quantity across line items.
+        data_tests:
+          - assert_positive_value
+      - name: gross_revenue
+        description: Sum of extended_price across line items (pre-discount).
+        data_tests:
+          - assert_positive_value
+      - name: net_revenue
+        description: Sum of net revenue (extended_price * (1 - discount_rate)) across line items.
+        data_tests:
+          - assert_positive_value
+      - name: total_discount_amount
+        description: Sum of discount dollars across line items.
+      - name: total_tax_amount
+        description: Sum of tax dollars across line items.
+      - name: avg_days_in_transit
+        description: Average days_in_transit across line items. NULL when no receipts recorded.
+      - name: returned_item_count
+        description: Count of line items with return_flag = 'R'.
+      - name: has_any_return
+        description: Boolean — true if any line item in the order was returned.
 
   - name: fct_order_items
     description: >
@@ -51,6 +99,10 @@ models:
               arguments:
                 to: ref('fct_orders')
                 field: order_key
+      - name: line_number
+        description: Line number within the order. Part of the natural composite key.
+        data_tests:
+          - not_null
       - name: customer_key
         description: FK to dim_customer.
         data_tests:
@@ -76,19 +128,53 @@ models:
                 to: ref('dim_part')
                 field: part_key
       - name: return_flag
+        description: R = returned, A = accepted, N = neither.
         data_tests:
           - accepted_values:
               arguments:
                 values: ['R', 'A', 'N']
+      - name: line_status
+        description: O = open (not yet shipped), F = fulfilled (shipped).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['O', 'F']
+      - name: ship_mode
+        description: Shipping carrier mode.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['REG AIR', 'AIR', 'RAIL', 'SHIP', 'TRUCK', 'MAIL', 'FOB']
+      - name: ship_instructions
+        description: >
+          Delivery instruction code: DELIVER IN PERSON, COLLECT COD,
+          TAKE BACK RETURN, or NONE.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  ['DELIVER IN PERSON', 'COLLECT COD', 'TAKE BACK RETURN', 'NONE']
+      - name: discount_rate
+        description: Per-line discount rate, 0.00–0.10.
+      - name: discount_amount
+        description: extended_price * discount_rate. Computed in staging.
+      - name: tax_rate
+        description: Tax rate applied to the line item, 0.00–0.08.
       - name: net_revenue
         description: extended_price * (1 - discount_rate). Computed in staging.
         data_tests:
           - assert_positive_value
       - name: extended_price
-        description: Gross price before discount.
+        description: Gross line price before discount (quantity * part retail price).
         data_tests:
           - assert_positive_value
       - name: quantity
-        description: Units ordered. Always positive.
+        description: Units ordered.
         data_tests:
           - assert_positive_value
+      - name: days_in_transit
+        description: >
+          receipt_date - ship_date in days. NULL when receipt_date is not
+          yet populated.
+      - name: is_returned
+        description: Boolean flag derived from return_flag = 'R'.

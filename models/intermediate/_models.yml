@@ -17,13 +17,33 @@ models:
                 field: order_key
       - name: line_item_count
         description: Number of line items in the order.
-      - name: net_revenue
-        description: Sum of net revenue across line items.
+      - name: distinct_part_count
+        description: Count of distinct parts across line items in the order.
+      - name: distinct_supplier_count
+        description: Count of distinct suppliers across line items in the order.
       - name: gross_revenue
         description: Sum of extended_price across line items (pre-discount).
+        data_tests:
+          - assert_positive_value
+      - name: net_revenue
+        description: Sum of net revenue (extended_price * (1 - discount_rate)) across line items.
+        data_tests:
+          - assert_positive_value
       - name: total_discount_amount
         description: Sum of discount dollars across line items.
       - name: total_tax_amount
         description: Sum of tax dollars across line items.
+      - name: total_quantity
+        description: Sum of quantity across all line items in the order.
+      - name: first_ship_date
+        description: Earliest ship_date among line items. NULL if nothing shipped yet.
+      - name: last_ship_date
+        description: Latest ship_date among line items.
+      - name: last_receipt_date
+        description: Latest receipt_date among line items.
+      - name: avg_days_in_transit
+        description: Average days_in_transit across line items. NULL when no receipts recorded.
       - name: returned_item_count
         description: Count of line items with return_flag = 'R'.
+      - name: has_any_return
+        description: Boolean — true if any line item in the order was returned.
