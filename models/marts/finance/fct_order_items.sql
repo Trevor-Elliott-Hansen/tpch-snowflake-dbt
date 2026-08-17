@@ -9,7 +9,21 @@
 -- Uses a surrogate key (dbt_utils.generate_surrogate_key) since the natural
 -- key is composite. Foreign keys to dim_customer / dim_supplier / dim_part
 -- are kept as natural keys (TPCH numeric ids) for join simplicity.
+--
+-- Incremental: merge strategy on order_item_key. Watermark is order_date
+-- with a 3-day lookback to capture late-arriving line items for recent orders.
+-- Run with --full-refresh after: historical backfills, source corrections
+-- older than the lookback window, or any change to this model's logic.
 -- =============================================================================
+
+{{
+    config(
+        materialized='incremental',
+        unique_key='order_item_key',
+        incremental_strategy='merge',
+        on_schema_change='append_new_columns'
+    )
+}}
 
 with line_items as (
     select * from {{ ref('stg_tpch__lineitems') }}
@@ -68,8 +82,22 @@ joined as (
         -- flags
         li.is_returned
 
+    -- inner join: every line item has an order (enforced by
+    -- assert_no_orphaned_line_items). A left join here would make full-refresh
+    -- and incremental runs treat a hypothetical orphan differently (NULL
+    -- order_date passes no watermark filter).
     from line_items li
-    left join orders o on li.order_key = o.order_key
+    inner join orders o on li.order_key = o.order_key
+
+    {% if is_incremental() %}
+    -- coalesce guards the cold-start edge: if the target exists but is empty
+    -- (failed partial run, manual delete), max() is NULL and an unguarded
+    -- filter would silently load nothing forever. This degrades to a full load.
+    where o.order_date >= coalesce(
+        (select dateadd(day, -3, max(order_date)) from {{ this }}),
+        '1900-01-01'::date
+    )
+    {% endif %}
 )
 
 select * from joined
