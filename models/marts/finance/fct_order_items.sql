@@ -90,9 +90,12 @@ joined as (
     inner join orders o on li.order_key = o.order_key
 
     {% if is_incremental() %}
-    where o.order_date >= (
-        select dateadd(day, -3, max(order_date))
-        from {{ this }}
+    -- coalesce guards the cold-start edge: if the target exists but is empty
+    -- (failed partial run, manual delete), max() is NULL and an unguarded
+    -- filter would silently load nothing forever. This degrades to a full load.
+    where o.order_date >= coalesce(
+        (select dateadd(day, -3, max(order_date)) from {{ this }}),
+        '1900-01-01'::date
     )
     {% endif %}
 )
