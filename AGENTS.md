@@ -134,8 +134,9 @@ only violates an excluded rule, and do not edit `.sqlfluff` without asking.
 
 ## Guardrails
 
-Several of these rules are also *enforced* by a PreToolUse hook
-(`.cortex/hooks/guardrails.sh`): prod targets, `dbt snapshot`, destructive
+Several of these rules are also *enforced* by a PreToolUse hook (shipped in
+the `tpch-conventions` plugin: `.cortex/plugins/tpch-conventions/hooks/
+guardrails.sh`): prod targets, `dbt snapshot`, destructive
 DDL outside dev schemas, and warehouse/spend changes are blocked at the
 command level regardless of instructions. A block from the hook is expected
 behavior, not an error — do not attempt to work around it; relay the reason
