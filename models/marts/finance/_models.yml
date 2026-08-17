@@ -88,8 +88,11 @@ models:
       Materialized incrementally (merge strategy on order_item_key).
       Watermark: order_date with a 3-day lookback — on incremental runs,
       only rows with order_date within 3 days of the current max are
-      re-processed and merged. on_schema_change is append_new_columns so
-      new upstream columns propagate without breaking existing runs.
+      re-processed and merged. Consumers (including semantic-layer
+      metrics): source corrections older than the lookback window do not
+      appear until a --full-refresh. on_schema_change is
+      append_new_columns, so new upstream columns propagate automatically
+      but are NULL for rows loaded before the column existed.
     columns:
       - name: order_item_key
         description: Surrogate primary key over (order_key, line_number).
