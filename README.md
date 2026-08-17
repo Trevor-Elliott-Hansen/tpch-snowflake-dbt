@@ -421,6 +421,41 @@ build workflow is a natural next step.
 
 ---
 
+## AI agent governance layer
+
+The project's second act: a governance stack for AI coding agents (Snowflake
+Cortex Code), built on the thesis that **the semantic layer gives humans
+consistent answers, and the governed agent layer gives AI-assisted developers
+consistent behavior** — the same principle (centralize definitions, don't let
+every person or agent improvise) applied first to metrics, then to agents.
+
+Five layers, each demonstrated under adversarial testing, all shipped as PRs
+with the experiments documented:
+
+| Layer | Artifact | Proven by |
+|---|---|---|
+| **Environment & spend** | [`setup/setup.sql`](setup/setup.sql) — role, warehouse, cost guardrails (resource monitor + per-user CoCo daily credit caps) | From-zero environment rebuild; caps armed *before* AI features were unlocked ([#10](../../pull/10)) |
+| **Advice** | [`AGENTS.md`](AGENTS.md) — conventions + architectural intent | Controlled experiment: same prompt with/without the file — the ungoverned agent materialized a table duplicating the semantic layer; the governed agent refused and produced the MetricFlow query instead ([#11](../../pull/11)) |
+| **Runbook** | [`add-staging-model` skill](.cortex/plugins/tpch-conventions/skills/add-staging-model/SKILL.md) — the workflow as gated, executable phases | First live run built `stg_tpch__part_suppliers` (composite-PK path) cleanly; agent's self-report matched independent re-verification exactly ([#13](../../pull/13)) |
+| **Enforcement** | [guardrails hook](.cortex/plugins/tpch-conventions/hooks/guardrails.sh) — PreToolUse blocks on prod targets, `dbt snapshot` (stateful SCD2), destructive DDL, warehouse changes | Escalation test: agent refused a prod deploy, refused again under explicit owner override, and the *hook* blocked the first command that matched a pattern ([#14](../../pull/14)) |
+| **Least-privilege review** | [`dbt-reviewer` subagent](.cortex/plugins/tpch-conventions/agents/dbt-reviewer.md) — `tools: read, grep, glob, tgrep`; read-only by construction | 7/8 planted defects caught, 0 false positives; misconfigured allowlists proved to fail *closed* ([#15](../../pull/15)) |
+
+The layers compose: everything ships as the versioned
+[`tpch-conventions` plugin](.cortex/plugins/tpch-conventions/) ([#16](../../pull/16)),
+published to the Snowflake Plugins Catalog as a `CORTEX EXTENSION` with READ
+granted to `TRANSFORMER` only — **agent tooling access governed by the same
+roles and grants as the data**. And the same reviewer runs headless in CI on
+every PR ([#17](../../pull/17)), under a dedicated service identity
+(`TYPE=SERVICE` user, role-restricted expiring PAT), posting advisory reviews:
+a human merges, the agent informs.
+
+The capstone ([#18](../../pull/18)) exercised the whole stack on real work —
+converting `fct_order_items` to incremental materialization — and the CI
+reviewer's pushback caught two subtle correctness issues (full-refresh vs.
+incremental join-mode inconsistency; the cold-start empty-table trap, which
+was then proven and fixed empirically). Four review rounds, finding-by-finding
+human dispositions recorded in commit history.
+
 ## What this project demonstrates
 
 - **Data modeling** — Kimball star schema, dimensional modeling, grain discipline
@@ -430,6 +465,8 @@ build workflow is a natural next step.
 - **Semantic layer** — MetricFlow metrics (simple + derived), entity joins, cross-grain slicing
 - **Software engineering** — env-var config, version-controlled credentials, linting (sqlfluff + sqlfmt), pre-commit hooks, CI (GitHub Actions), MIT license
 - **Documentation** — column-level descriptions, model descriptions, this README, exposure declarations
+- **AI agent governance** — AGENTS.md conventions, custom skills, PreToolUse guardrail hooks, least-privilege subagents, plugin packaging with catalog RBAC, CI review agents under service identities, and incremental materialization delivered through that stack
+- **AI-assisted engineering discipline** — agent-authored work disclosed in commits, adversarial testing of every governance layer, finding-by-finding dispositions of agent reviews, and human-declared convergence
 
 ---
 
