@@ -182,7 +182,7 @@ models:
           Original composite type string from source. Parsed into
           part_category, part_finish, and part_material.
       - name: retail_price
-        description: List price.
+        description: List price in dollars, before any discounting.
         data_tests:
           - assert_positive_value
       - name: part_category
