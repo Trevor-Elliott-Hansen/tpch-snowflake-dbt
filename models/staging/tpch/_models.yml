@@ -194,6 +194,44 @@ models:
       - name: comment
         description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
 
+  - name: stg_tpch__part_suppliers
+    description: >
+      Staging layer for TPCH part-supplier relationships.
+      One row per (part_key, supplier_key) combination. ~800K rows.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - part_key
+              - supplier_key
+    columns:
+      - name: part_key
+        description: Part of composite PK; FK to stg_tpch__parts.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__parts')
+                field: part_key
+      - name: supplier_key
+        description: Part of composite PK; FK to stg_tpch__suppliers.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_tpch__suppliers')
+                field: supplier_key
+      - name: available_quantity
+        description: Units of this part available from this supplier.
+        data_tests:
+          - assert_positive_value
+      - name: supply_cost
+        description: Cost per unit from this supplier, in dollars.
+        data_tests:
+          - assert_positive_value
+      - name: comment
+        description: Free-text comment. Column name is a real TPCH field, not a SQL comment.
+
   - name: stg_tpch__nations
     description: Staging layer for TPCH nations. 25 rows.
     columns:
