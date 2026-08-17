@@ -1,0 +1,128 @@
+# =============================================================================
+# agent-review.yml — dbt-reviewer on every PR
+# =============================================================================
+# Runs the tpch-conventions plugin's dbt-reviewer subagent (headless Cortex
+# Code CLI) against the PR diff and posts findings as a PR comment.
+#
+# Design notes:
+# - The DIFF IS PASSED AS INPUT to the reviewer. The reviewer is scoped to
+#   read/grep/glob and cannot run git — without the diff as input it cannot
+#   see removals (e.g., a silently deleted test). Discovered empirically;
+#   see PR #15.
+# - Auth: dedicated SERVICE user (COCO_CI) with a role-restricted, expiring
+#   PAT (see setup/ci_user.sql). The account-level CoCo CLI daily credit
+#   limit applies to this user like any other — the CI agent is metered.
+# - The plugin is auto-discovered from .cortex/plugins/ in the checkout, so
+#   the reviewer the CI runs is the same versioned one humans use.
+# =============================================================================
+
+name: Agent review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "models/**"
+      - "seeds/**"
+      - "snapshots/**"
+      - "tests/**"
+      - "macros/**"
+      - "dbt_project.yml"
+      - "packages.yml"
+      # Governance tooling changes get agent review too — and this makes the
+      # workflow test itself on the PR that introduces or modifies it.
+      - ".cortex/**"
+      - ".github/workflows/agent-review.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: agent-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  agent-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout (full history for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Cortex Code CLI
+        run: |
+          curl -LsS https://ai.snowflake.com/static/cc-scripts/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Configure Snowflake connection
+        run: |
+          mkdir -p ~/.snowflake
+          cat > ~/.snowflake/connections.toml <<EOF
+          [ci]
+          account = "${{ secrets.SNOWFLAKE_ACCOUNT }}"
+          user = "${{ secrets.SNOWFLAKE_CI_USER }}"
+          authenticator = "PROGRAMMATIC_ACCESS_TOKEN"
+          token = "${{ secrets.SNOWFLAKE_CI_PAT }}"
+          warehouse = "TRANSFORMING"
+          role = "TRANSFORMER"
+          EOF
+          chmod 600 ~/.snowflake/connections.toml
+
+      - name: Build review prompt (diff as input)
+        run: |
+          git diff "origin/${{ github.base_ref }}"...HEAD > pr.diff
+          DIFF_BYTES=$(wc -c < pr.diff)
+          diff_block() {
+            echo "The diff is the authoritative review scope — it shows additions AND removals."
+            echo "Read repository files for surrounding context as needed."
+            echo "Respond with ONLY the review, in GitHub-flavored markdown, following the"
+            echo "output contract (verdict, severity-ordered findings, clean categories,"
+            echo "not-verified list)."
+            echo
+            echo '```diff'
+            head -c 80000 pr.diff
+            echo '```'
+            if [ "$DIFF_BYTES" -gt 80000 ]; then
+              echo
+              echo "NOTE: diff truncated at 80KB of $DIFF_BYTES bytes — say so in the review."
+            fi
+          }
+          { echo "Review the following pull-request diff."; diff_block; } > prompt-direct.txt
+          { echo "Use the dbt-reviewer subagent to review the following pull-request diff."; diff_block; } > prompt-subagent.txt
+
+      - name: Run dbt-reviewer
+        run: |
+          # Preferred: invoke the reviewer agent definition directly; its tools
+          # allowlist applies at the top level. Fallback: prompt-mediated
+          # subagent invocation, in case --agent doesn't resolve plugin agents.
+          set +e
+          cortex -c ci --agent dbt-reviewer --print "$(cat prompt-direct.txt)" -o review.md 2> cortex-stderr.log
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ] || [ ! -s review.md ]; then
+            echo "--agent invocation failed (exit $STATUS); falling back to subagent prompt"
+            cat cortex-stderr.log
+            cortex -c ci --print "$(cat prompt-subagent.txt)" -o review.md 2>> cortex-stderr.log \
+              || { echo "fallback failed:"; cat cortex-stderr.log; exit 1; }
+          fi
+          # Fail loudly on empty output rather than posting a blank review
+          [ -s review.md ] || { echo "empty review output"; cat cortex-stderr.log; exit 1; }
+
+      - name: Post PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## 🤖 dbt-reviewer — automated agent review"
+            echo
+            echo "_Read-only reviewer from the \`tpch-conventions\` plugin, running headless"
+            echo "as service user \`COCO_CI\` (role-restricted PAT). Advisory, not blocking:"
+            echo "a human merges, the agent informs._"
+            echo
+            cat review.md
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
