@@ -12,6 +12,8 @@
 --
 -- Incremental: merge strategy on order_item_key. Watermark is order_date
 -- with a 3-day lookback to capture late-arriving line items for recent orders.
+-- Run with --full-refresh after: historical backfills, source corrections
+-- older than the lookback window, or any change to this model's logic.
 -- =============================================================================
 
 {{
@@ -80,8 +82,12 @@ joined as (
         -- flags
         li.is_returned
 
+    -- inner join: every line item has an order (enforced by
+    -- assert_no_orphaned_line_items). A left join here would make full-refresh
+    -- and incremental runs treat a hypothetical orphan differently (NULL
+    -- order_date passes no watermark filter).
     from line_items li
-    left join orders o on li.order_key = o.order_key
+    inner join orders o on li.order_key = o.order_key
 
     {% if is_incremental() %}
     where o.order_date >= (
