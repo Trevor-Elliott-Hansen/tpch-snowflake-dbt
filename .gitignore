@@ -27,3 +27,5 @@ profiles.yml
 
 # OS
 Thumbs.db
+# Cortex Code workspace state (plans, session data)
+.snowflake/
