@@ -74,7 +74,30 @@ sources:
               - not_null
 
       - name: partsupp
-        description: Part-supplier mapping. ~800K rows.
+        description: Part-supplier mapping. ~800K rows. Composite PK (partkey, suppkey).
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              arguments:
+                combination_of_columns:
+                  - ps_partkey
+                  - ps_suppkey
+        columns:
+          - name: ps_partkey
+            description: FK to part.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('tpch', 'part')
+                    field: p_partkey
+          - name: ps_suppkey
+            description: FK to supplier.
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('tpch', 'supplier')
+                    field: s_suppkey
 
       - name: nation
         description: 25 nations.
