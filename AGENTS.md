@@ -134,6 +134,13 @@ only violates an excluded rule, and do not edit `.sqlfluff` without asking.
 
 ## Guardrails
 
+Several of these rules are also *enforced* by a PreToolUse hook
+(`.cortex/hooks/guardrails.sh`): prod targets, `dbt snapshot`, destructive
+DDL outside dev schemas, and warehouse/spend changes are blocked at the
+command level regardless of instructions. A block from the hook is expected
+behavior, not an error — do not attempt to work around it; relay the reason
+and let the human decide.
+
 - **Never run anything with `--target prod`.** Dev work uses the default
   `dev` target only.
 - **Never run `dbt snapshot` unless the task explicitly calls for it.** The

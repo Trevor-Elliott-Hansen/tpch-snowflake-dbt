@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.cortex/hooks/guardrails.sh",
+            "timeout": 10,
+            "enabled": true,
+            "statusMessage": "Checking guardrails"
+          }
+        ]
+      }
+    ]
+  }
+}
