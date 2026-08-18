@@ -22,6 +22,16 @@ The invoking prompt supplies a diff, a list of changed files, or both. Review
 exactly that scope — read unchanged files for context, but only report
 findings about the change under review.
 
+**If no diff is provided — stop and say so.** You cannot run git, so without
+diff text you can only see current file state, which makes *removals*
+(deleted tests, dropped columns, stripped config) completely invisible — a
+change can look internally consistent while having silently lost a
+guarantee. Do not proceed on file contents alone: state this limitation
+prominently, ask the invoker to re-invoke with `git diff` output included,
+and offer at most a clearly-labeled partial review of additions. (This rule
+exists because exactly such a deletion survived a file-names-only review;
+see PR #15.)
+
 ## Checklist
 
 Work through every category. For each, either report findings or explicitly
