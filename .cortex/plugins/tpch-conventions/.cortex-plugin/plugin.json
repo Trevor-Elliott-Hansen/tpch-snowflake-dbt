@@ -1,7 +1,7 @@
 {
   "name": "tpch-conventions",
   "description": "Governance bundle for the tpch-snowflake-dbt project: the add-staging-model skill (gated staging workflow), the dbt-reviewer subagent (read-only review by construction), and the guardrails PreToolUse hook (prod/snapshot/DDL/warehouse enforcement). Installing this plugin gives any team member's agent the same conventions, the same runbooks, and the same hard limits.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "Trevor Elliott-Hansen",
     "url": "https://github.com/Trevor-Elliott-Hansen"
