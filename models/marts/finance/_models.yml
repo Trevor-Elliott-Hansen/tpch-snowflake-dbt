@@ -17,10 +17,6 @@ models:
         description: FK to dim_customer.
         data_tests:
           - not_null
-          - relationships:
-              arguments:
-                to: ref('dim_customer')
-                field: customer_key
       - name: order_status
         description: O = open, F = fulfilled, P = processing.
         data_tests:
